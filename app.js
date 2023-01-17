@@ -1,8 +1,22 @@
-const express = require("express");
-const ejs = require("ejs");
-var _ = require("lodash");
+//jshint esversion:6
 
-const posts = [];
+const express = require("express");
+const bodyParser = require("body-parser");
+const ejs = require("ejs");
+const _ = require("lodash");
+const mongoose = require("mongoose");
+require("dotenv").config();
+
+mongoose.connect(
+  `mongodb+srv://ajay:${process.env.PASS}@cluster0.x1rvbqd.mongodb.net/blogDB?retryWrites=true&w=majority`
+);
+
+const postSchema = new mongoose.Schema({
+  title: String,
+  content: String,
+});
+
+const Post = mongoose.model("Post", postSchema);
 
 const homeStartingContent =
   "Lacus vel facilisis volutpat est velit egestas dui id ornare. Semper auctor neque vitae tempus quam. Sit amet cursus sit amet dictum sit amet justo. Viverra tellus in hac habitasse. Imperdiet proin fermentum leo vel orci porta. Donec ultrices tincidunt arcu non sodales neque sodales ut. Mattis molestie a iaculis at erat pellentesque adipiscing. Magnis dis parturient montes nascetur ridiculus mus mauris vitae ultricies. Adipiscing elit ut aliquam purus sit amet luctus venenatis lectus. Ultrices vitae auctor eu augue ut lectus arcu bibendum at. Odio euismod lacinia at quis risus sed vulputate odio ut. Cursus mattis molestie a iaculis at erat pellentesque adipiscing.";
@@ -15,56 +29,58 @@ const app = express();
 
 app.set("view engine", "ejs");
 
-app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
-app.get("/", function (req, res) {
+let posts = [];
+
+app.get("/", async function (req, res) {
+  const posts = await Post.find({});
+
   res.render("home", {
-    homeStartingContent: homeStartingContent,
+    startingContent: homeStartingContent,
     posts: posts,
   });
 });
 
 app.get("/about", function (req, res) {
-  res.render("about", {
-    aboutContent: aboutContent,
-  });
+  res.render("about", { aboutContent: aboutContent });
 });
+
 app.get("/contact", function (req, res) {
-  res.render("contact", {
-    contactContent: contactContent,
-  });
+  res.render("contact", { contactContent: contactContent });
 });
 
 app.get("/compose", function (req, res) {
-  res.render("compose", {});
+  res.render("compose");
 });
 
 app.post("/compose", function (req, res) {
-  const { postTitle, postBody } = req.body;
-  const post = {
-    title: postTitle,
-    content: postBody,
-  };
-  posts.push(post);
-  res.redirect("/");
+  const title = req.body.postTitle;
+  const content = req.body.postBody;
+
+  const newPost = new Post({
+    title: title,
+    content: content,
+  });
+  newPost.save().then((savedPost) => {
+    console.log(savedPost);
+    if (savedPost) res.redirect("/");
+  });
 });
 
-app.get("/posts/:postName", (req, res) => {
-  const { postName } = req.params;
-  const matchFound = posts.filter(
-    (x) => _.lowerCase(x.title) == _.lowerCase(postName)
-  );
-  if (matchFound.length) {
-    console.log(matchFound);
-    res.render("post", {
-      matches: matchFound,
-    });
-  } else {
-    res.redirect("/");
-  }
+app.get("/posts/:id", async function (req, res) {
+  const requestedPostID = req.params.id;
+
+  const post = await Post.findOne({ _id: requestedPostID });
+
+  console.log(post);
+  res.render("post", {
+    title: post.title,
+    content: post.content,
+  });
 });
 
-app.listen(3000, function () {
-  console.log("Server started on port 3000");
+app.listen(process.env.PORT || 3000, function () {
+  console.log(process.env.PORT || "Server started on http://localhost:3000");
 });

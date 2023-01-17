@@ -1,8 +1,6 @@
-<%- include('partials/header.ejs') -%>
+<%- include("partials/header"); -%>
 
-<% matches.forEach((x,i) =>{ %>
-<h1> <%= x.title %> </h1>
-<p> <%= x.content %> </p>
-<% }) %>
+  <h1><%=title%></h1>
+  <p><%=content%></p>
 
-<%- include('partials/footer.ejs') -%>
+<%- include("partials/footer"); -%>
